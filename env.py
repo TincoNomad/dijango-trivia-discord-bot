@@ -35,6 +35,9 @@ env = environ.Env(
     # API configuration
     API_VERSION=(str, "v1"),  # API version
     API_TIMEOUT=(int, 30),  # API timeout in seconds
+    # OpenAI configuration
+    OPENAI_API_KEY=(str, None),  # OpenAI API key
+    OPENAI_MODEL=(str, "gpt-3.5-turbo"),  # OpenAI model name
 )
 
 # Read the .env file from project root
@@ -48,3 +51,6 @@ IS_TESTING = env("ENVIRONMENT") == "testing"
 # Validation
 assert env("SECRET_KEY"), "SECRET_KEY must be set"
 assert env("SIGNING_KEY"), "SIGNING_KEY must be set"
+
+# OpenAI validation
+assert env("OPENAI_API_KEY"), "OPENAI_API_KEY must be set"

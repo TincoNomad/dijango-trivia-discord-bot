@@ -25,6 +25,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.response import Response
+from services.ai_generator import TriviaAIGenerator
 
 from api.utils.cache_utils import cache_viewset_action
 from api.utils.jwt_utils import get_user_id_by_username
@@ -345,6 +346,74 @@ class TriviaViewSet(viewsets.ModelViewSet):
         questions = trivia.questions.all()
         serializer = QuestionSerializer(questions, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=["post"])
+    async def generate_ai(self, request):
+        """
+        Generate trivia using AI
+
+        Args:
+            theme (str): Topic for the trivia
+            difficulty (int): Level 1-3
+            username (str): Creator username
+
+        Returns:
+            Response: Created trivia data
+
+        Raises:
+            ValidationError: If parameters invalid
+            APIException: If generation fails
+        """
+        theme = request.data.get("theme")
+        difficulty = request.data.get("difficulty")
+        username = request.data.get("username")
+
+        # Validate required fields
+        if not all([theme, difficulty, username]):
+            return Response(
+                {"error": "theme, difficulty and username are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Generate question using AI
+            generator = TriviaAIGenerator()
+            question = await generator.generate_question(
+                theme=theme, difficulty=difficulty
+            )
+
+            # Prepare trivia data
+            trivia_data = {
+                "title": f"AI Generated: {theme}",
+                "theme": theme,
+                "difficulty": difficulty,
+                "username": username,
+                "questions": [question],
+            }
+
+            # Create and validate trivia
+            serializer = TriviaSerializer(data=trivia_data)
+            serializer.is_valid(raise_exception=True)
+
+            # Create trivia with transaction
+            with transaction.atomic():
+                trivia = self.perform_create(serializer)
+                logger.info(
+                    f"AI-generated trivia created: ID={trivia.id}, "
+                    f"Creator={username}, Theme={theme}"
+                )
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except ValidationError as e:
+            logger.error(f"Validation error in AI generation: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error in AI trivia generation: {str(e)}")
+            return Response(
+                {"error": "Failed to generate trivia"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class ThemeViewSet(viewsets.ReadOnlyModelViewSet):
