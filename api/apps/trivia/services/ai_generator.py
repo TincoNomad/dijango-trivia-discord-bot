@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class TriviaAIGenerator:
     """OpenAI integration service for trivia generation"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         try:
             self.model = settings.OPENAI_MODEL
         except Exception as e:
@@ -50,16 +50,17 @@ class TriviaAIGenerator:
             raise APIException("Failed to generate question")
 
     def _build_prompt(self, theme: str, difficulty: int) -> str:
-        json_structure = {
-            "question": "The question text",
-            "options": ["option1", "option2", "option3", "option4"],
-            "correct_answer": "The correct option text",
-            "explanation": "Brief explanation of the answer",
+        template = {
+            "question" : "The question text",
+            "options" : ["option1", "option2", "option3", "option4"],
+            "correct_answer" : "The correct option text",
+            "explanation" : "Brief explanation of the answer"
         }
+        json_structure = json.dumps(template, indent=4, ensure_ascii=False)
         return (
             f"Create a trivia question about {theme} with difficulty level {difficulty}/3.\n"
-            f"The response must be a valid JSON with this exact structure: \n"
-            f"{json.dumps(json_structure, indent=4)}\n"
+            f"The response must be a valid JSON with this exact structure:\n"
+            f"{json_structure}\n"
             f"Ensure the correct_answer matches exactly one of the options."
         )
 

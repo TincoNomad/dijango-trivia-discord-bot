@@ -16,15 +16,22 @@ Features:
 """
 
 import uuid
+from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.utils import IntegrityError
+from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError as DRFValidationError
+
+# from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer  # Añade esta línea
+
+# from rest_framework.serializers import ModelSerializer
 from services.ai_generator import TriviaAIGenerator
 
 from api.utils.cache_utils import cache_viewset_action
@@ -45,12 +52,7 @@ User = get_user_model()
 class TriviaViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing trivias.
-
-    Features:
-    - CRUD operations
-    - Custom serializer selection
-    - Permission-based access
-    - Query filtering
+    TODO: Add proper authorization in production
     """
 
     def get_serializer_class(self):
@@ -60,51 +62,31 @@ class TriviaViewSet(viewsets.ModelViewSet):
         return TriviaSerializer
 
     def get_permissions(self):
-        """Define permissions based on action"""
+        """
+        Currently returns empty list for demo purposes.
+        TODO: Implement proper permissions for production
+        """
         return []
 
     def get_queryset(self):
         """
-        Filter queryset based on user permissions.
-
-        Returns:
-            QuerySet: Filtered trivia objects
+        Currently returns all trivias for demo purposes.
+        TODO: Implement proper permission filtering for production
         """
-        user = self.request.user
-        if user.is_authenticated:
-            if user.role == "admin":
-                logger.info(f"Admin access: {user.username} querying all trivias")
-                return Trivia.objects.all()
-            logger.info(f"User access: {user.username} querying allowed trivias")
-            return Trivia.objects.filter(
-                models.Q(is_public=True) | models.Q(is_public=False, created_by=user)
-            )
-        logger.info("Anonymous access: querying public trivias")
-        return Trivia.objects.filter(is_public=True)
+        return Trivia.objects.all()
 
     def perform_create(self, serializer):
         """
-        Create new trivia with creator information.
-
-        Args:
-            serializer: Validated trivia serializer
-
-        Raises:
-            ValidationError: If user not found or creation fails
+        Simplified creation for demo purposes.
+        TODO: Add proper user validation in production
         """
-        username = serializer.validated_data.get("username")
         try:
-            user = User.objects.get(username=username)
-            trivia = serializer.save(created_by=user, is_public=True)
+            trivia = serializer.save(is_public=True)
             logger.info(
-                f"Trivia created successfully: ID={trivia.id}, "
-                f"Creator={username}, Title={trivia.title}"
+                f"Trivia created successfully: ID={trivia.id}, Title={trivia.title}"
             )
-        except User.DoesNotExist:
-            logger.error(f"Attempt to create trivia with non-existent user: {username}")
-            raise ValidationError("User not found")
         except Exception as e:
-            logger.error(f"Error creating trivia: User={username}, " f"Error={str(e)}")
+            logger.error(f"Error creating trivia: Error={str(e)}")
             raise
 
     @cache_viewset_action()
@@ -318,10 +300,20 @@ class TriviaViewSet(viewsets.ModelViewSet):
             logger.error(f"Error updating questions: {e}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    def perform_update(self, serializer):
-        """Log and handle trivia updates"""
+    def perform_update(self, serializer: BaseSerializer[Any]) -> None:
+        """
+        Log and handle trivia updates
+
+        Args:
+            serializer: The serializer instance containing the update data
+
+        Raises:
+            ValidationError: If username is missing or invalid
+        """
         try:
-            username = self.request.query_params.get("username")
+            request: HttpRequest = self.request
+            username = request.POST.get("username")
+
             if not username:
                 raise ValidationError("Username is required for updates")
 
@@ -335,6 +327,9 @@ class TriviaViewSet(viewsets.ModelViewSet):
 
             serializer.save()
             logger.info(f"Trivia updated by user: {username}")
+        except ValidationError as ve:
+            logger.error(f"Validation error: {str(ve)}")
+            raise
         except Exception as e:
             logger.error(f"Update failed: {str(e)}")
             raise
@@ -348,7 +343,7 @@ class TriviaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=["post"])
-    async def generate_ai(self, request):
+    def generate_ai(self, request):
         """
         Generate trivia using AI
 
@@ -378,9 +373,7 @@ class TriviaViewSet(viewsets.ModelViewSet):
         try:
             # Generate question using AI
             generator = TriviaAIGenerator()
-            question = await generator.generate_question(
-                theme=theme, difficulty=difficulty
-            )
+            question = generator.generate_question(theme=theme, difficulty=difficulty)
 
             # Prepare trivia data
             trivia_data = {
@@ -397,7 +390,7 @@ class TriviaViewSet(viewsets.ModelViewSet):
 
             # Create trivia with transaction
             with transaction.atomic():
-                trivia = self.perform_create(serializer)
+                trivia = serializer.save()
                 logger.info(
                     f"AI-generated trivia created: ID={trivia.id}, "
                     f"Creator={username}, Theme={theme}"
