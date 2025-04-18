@@ -12,7 +12,7 @@ Features:
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from api.django import TRIVIA_URL
+from api.settings import TRIVIA_URL
 
 from .api_client import RateLimitExceeded, TriviaAPIClient
 from .utils.logging_bot import game_logger

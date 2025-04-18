@@ -1,5 +1,5 @@
 # Service definitions for Trivia application
-# - db: MySQL database server
+# - db: PostgreSQL database server
 # - redis: Cache and message broker
 # - celery: Async task worker
 # - web: Django API server
@@ -7,24 +7,19 @@
 
 services:
   db:
-    # MySQL database service configuration
-    # Handles persistent data storage with configurable credentials
-    image: mysql:8.0
+    # PostgreSQL service configuration
+    image: postgres:15-alpine
     restart: always
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_ROOT_HOST: '%'
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql:delegated
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --skip-ssl
+      - postgres_data:/var/lib/postgresql/data:delegated
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -80,14 +75,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DJANGO_SETTINGS_MODULE=api.django.${ENVIRONMENT:-development}
-      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DJANGO_SETTINGS_MODULE=api.settings
       - DEBUG=${DEBUG:-True}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - MYSQL_HOST=db
-      - MYSQL_PORT=3306
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379/1
       - CACHE_TTL=900
       - CACHE_KEY_PREFIX=trivia_api
@@ -124,11 +118,11 @@ services:
       - DJANGO_SETTINGS_MODULE=api.django.${ENVIRONMENT:-development}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG=${DEBUG:-True}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - MYSQL_HOST=db
-      - MYSQL_PORT=3306
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
       - DISCORD_KEY=${DISCORD_KEY}
     depends_on:
       web:
@@ -137,9 +131,9 @@ services:
       - app_network
 
 volumes:
-  mysql_data:
+  postgres_data:
     driver: local
-    name: trivia_mysql_data
+    name: trivia_postgres_data
   redis_data:
     driver: local
     name: trivia_redis_data

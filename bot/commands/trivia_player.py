@@ -4,7 +4,7 @@ from asyncio import TimeoutError
 import discord
 from discord import Client, Message, TextChannel, Thread
 
-from api.django import TRIVIA_URL
+from api.settings import TRIVIA_URL
 
 from ..game_state import GameState, PlayerGame
 from ..trivia_game import TriviaGame

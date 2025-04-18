@@ -10,7 +10,7 @@ Provides helper functions for:
 import logging
 from typing import Any, Dict, Tuple
 
-from api.django import DIFFICULTY_URL, THEME_URL
+from api.settings import DIFFICULTY_URL, THEME_URL
 
 from ..api_client import TriviaAPIClient
 

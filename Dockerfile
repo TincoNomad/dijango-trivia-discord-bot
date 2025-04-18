@@ -1,25 +1,22 @@
-# Base Python image for all services
-FROM python:3.12
+# Base image con Python preinstalado
+FROM python:3.13-alpine
 
 # Set working directory for application
 WORKDIR /app
 
-# Install system dependencies
-# - default-libmysqlclient-dev: Required for MySQL connections
-# - gcc: Required for compiling some Python packages
-# - curl: Used for health checks
-# - netcat-traditional: Used for network testing
-RUN apt-get update && apt-get install -y \
-    default-libmysqlclient-dev \
+# Instalar dependencias del sistema usando apk en lugar de apt-get
+RUN apk update && apk add --no-cache \
     gcc \
     curl \
-    netcat-traditional \
-    && rm -rf /var/lib/apt/lists/*
+    netcat-openbsd \
+    python3-dev \
+    musl-dev \
+    linux-headers \
+    && rm -rf /var/cache/apk/*
 
-# Install Python dependencies
-COPY requirements.txt requirements-docker.txt ./
-RUN pip install -r requirements.txt && \
-    pip install -r requirements-docker.txt
+# Las dependencias se instalan globalmente en el contenedor
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
 
 # Copy application code
 COPY . .

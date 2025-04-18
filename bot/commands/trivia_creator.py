@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 import discord
 from discord import Client, Message
 
-from api.django import TRIVIA_URL
+from api.settings import TRIVIA_URL
 
 from ..trivia_game import TriviaGame
 from ..utils.logging_bot import command_logger

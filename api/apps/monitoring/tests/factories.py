@@ -3,7 +3,7 @@ Factories for monitoring-related tests.
 Using Factory Boy to generate test data.
 """
 
-import factory
+import factory  # type: ignore
 from django.utils import timezone
 
 from api.apps.monitoring.models import ErrorLog, RequestLog

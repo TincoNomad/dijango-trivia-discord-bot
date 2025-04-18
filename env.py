@@ -18,35 +18,17 @@ Last Updated: 2024
 
 import os
 
-import environ
+import environ  # type: ignore
 
 # Initialize environ with default values
-env = environ.Env(
-    # Environment & Debug settings
-    ENVIRONMENT=(str, "development"),  # Current environment
-    DEBUG=(bool, True),  # Debug mode flag
-    # Security settings
-    SECRET_KEY=(str, None),  # Django secret key
-    SIGNING_KEY=(str, None),  # JWT signing key
-    # Database configuration
-    DB_NAME=(str, "trivia_db"),  # Database name
-    DB_USER=(str, "admin"),  # Database user
-    DB_PASSWORD=(str, "admin"),  # Database password
-    # API configuration
-    API_VERSION=(str, "v1"),  # API version
-    API_TIMEOUT=(int, 30),  # API timeout in seconds
-    # OpenAI configuration
-    OPENAI_API_KEY=(str, None),  # OpenAI API key
-    OPENAI_MODEL=(str, "gpt-3.5-turbo"),  # OpenAI model name
-)
+env = environ.Env()
 
 # Read the .env file from project root
 environ.Env.read_env(os.path.join(os.path.dirname(__file__), ".env"))
 
 # Environment detection
-IS_DEVELOPMENT = env("ENVIRONMENT") == "development"
-IS_PRODUCTION = env("ENVIRONMENT") == "production"
-IS_TESTING = env("ENVIRONMENT") == "testing"
+IS_PRODUCTION = not env("DEBUG", cast=bool)
+IS_DEVELOPMENT = env("DEBUG", cast=bool)
 
 # Validation
 assert env("SECRET_KEY"), "SECRET_KEY must be set"
@@ -54,3 +36,19 @@ assert env("SIGNING_KEY"), "SIGNING_KEY must be set"
 
 # OpenAI validation
 assert env("OPENAI_API_KEY"), "OPENAI_API_KEY must be set"
+
+
+# URL Configuration based on environment
+def get_base_url() -> str:
+    # Get URL from environment and ensure it's a string
+    url: str = str(env("URL"))  # Force string type
+    protocol: str = "https" if IS_PRODUCTION else "http"
+
+    # Now Pylance knows url is definitely a string
+    if isinstance(url, str) and "://" in url:
+        url = url.split("://")[1]
+
+    return f"{protocol}: //{url}"
+
+
+BASE_URL = get_base_url()

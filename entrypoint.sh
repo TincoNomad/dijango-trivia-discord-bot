@@ -13,20 +13,14 @@ set -e
 
 # Database connection check function
 wait_for_db() {
-    echo "🔄 Waiting for MySQL..."
+    echo "🔄 Waiting for PostgreSQL..."
 
-    # Verify MySQL connection
-    while ! python -c "import MySQLdb; MySQLdb.connect(
-        host='db',
-        user='${MYSQL_USER}',
-        password='${MYSQL_PASSWORD}',
-        db='${MYSQL_DATABASE}'
-    )" 2>/dev/null; do
-        echo "⏳ MySQL is unavailable - sleeping"
+    while ! nc -z $POSTGRES_HOST $POSTGRES_PORT; do
+        echo "⏳ PostgreSQL is unavailable - sleeping"
         sleep 1
     done
 
-    echo "✅ MySQL connected"
+    echo "✅ PostgreSQL connected"
 }
 
 # Apply database migrations

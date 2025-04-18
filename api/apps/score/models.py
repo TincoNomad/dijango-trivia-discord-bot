@@ -28,17 +28,21 @@ class LeaderBoard(models.Model):
         created_at (datetime): Timestamp of creation
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    discord_channel = models.CharField(
+    id: models.UUIDField = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False
+    )
+    discord_channel: models.CharField = models.CharField(
         _("Discord Channel"), max_length=255, unique=True
     )
-    created_by = models.ForeignKey(
+    created_by: models.ForeignKey = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="leaderboards",
         verbose_name=_("Created By"),
     )
-    created_at = models.DateTimeField(_("Created"), auto_now_add=True)
+    created_at: models.DateTimeField = models.DateTimeField(
+        _("Created"), auto_now_add=True
+    )
 
     def __str__(self):
         return f"Leaderboard - {self.discord_channel}"
@@ -59,15 +63,17 @@ class Score(models.Model):
         created_at (datetime): Timestamp of score creation
     """
 
-    name = models.CharField(_("name"), max_length=255)
-    points = models.IntegerField(_("points"))
-    leaderboard = models.ForeignKey(
+    name: models.CharField = models.CharField(_("name"), max_length=255)
+    points: models.IntegerField = models.IntegerField(_("points"))
+    leaderboard: models.ForeignKey = models.ForeignKey(
         LeaderBoard,
         on_delete=models.CASCADE,
         related_name="scores",
         verbose_name=_("LeaderBoard"),
     )
-    created_at = models.DateTimeField(_("Created"), auto_now_add=True)
+    created_a: models.DateTimeField = models.DateTimeField(
+        _("Created"), auto_now_add=True
+    )
 
     class Meta:
         ordering = ["-points"]
@@ -87,10 +93,12 @@ class TriviaWinner(models.Model):
         score (str): Score achieved in the trivia
     """
 
-    name = models.CharField(_("Winner Name"), max_length=255)
-    trivia_name = models.CharField(_("Trivia Name"), max_length=255)
-    date_won = models.DateTimeField(_("Date Won"), auto_now_add=True)
-    score = models.CharField(_("Score"), max_length=100)
+    name: models.CharField = models.CharField(_("Winner Name"), max_length=255)
+    trivia_name: models.CharField = models.CharField(_("Trivia Name"), max_length=255)
+    date_won: models.DateTimeField = models.DateTimeField(
+        _("Date Won"), auto_now_add=True
+    )
+    score: models.CharField = models.CharField(_("Score"), max_length=100)
 
     def __str__(self):
         return f"{self.name} - {self.trivia_name} - {self.date_won}"

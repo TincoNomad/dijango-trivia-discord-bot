@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 import aiohttp
 from typing_extensions import Self
 
-from api.django import (
+from api.settings import (
     BASE_URL,
     FILTER_URL,
     LEADERBOARD_URL,
