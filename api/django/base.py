@@ -41,7 +41,6 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 from typing import List
-
 from env import env
 
 # Project setup
@@ -53,8 +52,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security settings
 SECRET_KEY = env("SECRET_KEY")
-DEBUG = env("DEBUG")
+DEBUG = env("DEBUG", default=False)
+ENVIRONMENT = env("ENVIRONMENT", default="production")
 ALLOWED_HOSTS: List[str] = []
+
+# Allowed hosts configuration based on environment
+ALLOWED_HOSTS = env("ALLOWED_HOSTS", default="").split(",")
+if DEBUG:
+    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1", "web"])
 
 # HTTPS Security Configuration
 # These settings will be automatically adjusted based on the environment
@@ -118,16 +123,15 @@ MIDDLEWARE = [
 # Database configuration
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": env("MYSQL_DATABASE"),
-        "USER": env("MYSQL_USER"),
-        "PASSWORD": env("MYSQL_PASSWORD"),
-        "HOST": env("MYSQL_HOST"),
-        "PORT": env("MYSQL_PORT"),
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("POSTGRES_DB"),
+        "USER": env("POSTGRES_USER"),
+        "PASSWORD": env("POSTGRES_PASSWORD"),
+        "HOST": env("POSTGRES_HOST"),
+        "PORT": env("POSTGRES_PORT"),
         "OPTIONS": {
-            "charset": "utf8mb4",
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+            "sslmode": "require",  # Required for Neon.tech
+        } if not DEBUG else {}
     }
 }
 
@@ -342,3 +346,10 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
+
+# Email backend configuration based on environment
+EMAIL_BACKEND = (
+    "django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend"
+)
