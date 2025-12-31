@@ -32,7 +32,7 @@ def main():
     Raises:
         ImportError: If Django is not installed or PYTHONPATH is not set correctly
     """
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "api.django.base")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "api.settings")
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

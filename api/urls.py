@@ -21,7 +21,6 @@ from django.views import View
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.routers import DefaultRouter
 
-from .apps.monitoring.views import health_check
 from .apps.score.viewsets import LeaderBoardViewSet, ScoreViewSet, TriviaWinnerViewSet
 from .apps.trivia.views import GetQuestions
 from .apps.trivia.viewsets import ThemeViewSet, TriviaViewSet
@@ -96,7 +95,7 @@ urlpatterns = [
         name="get-questions",
     ),
     # Health check endpoint
-    re_path(r"^health/?$", health_check, name="health-check"),
+    re_path(r"^", include("api.apps.monitoring.urls")),
 ]
 
 # Static/Media files serving in development

@@ -41,18 +41,24 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 from typing import List
-from env import env
+import environ
+
+# Initialize environ
+env = environ.Env()
 
 # Project setup
 project_root = Path(__file__).resolve().parent.parent
 sys.path.append(str(project_root))
+
+# Read .env file
+environ.Env.read_env(os.path.join(project_root, ".env"))
 
 # Base directory configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security settings
 SECRET_KEY = env("SECRET_KEY")
-DEBUG = env("DEBUG", default=False)
+DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT = env("ENVIRONMENT", default="production")
 ALLOWED_HOSTS: List[str] = []
 

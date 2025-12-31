@@ -6,18 +6,23 @@ WORKDIR /app
 
 # Install minimal required dependencies
 RUN apt-get update && apt-get install -y \
-    # PostgreSQL client library
     libpq-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt ./
+# Primero copiamos solo requirements.txt para aprovechar la caché de Docker
+COPY requirements.txt .
+
+# Instalamos dependencias
 RUN pip install -r requirements.txt
 
-# Copy project files
-COPY . .
+# Luego copiamos solo los archivos necesarios
+COPY manage.py .
+COPY api/ ./api
+COPY templates/ ./templates
+COPY static/ ./static
+# No copiamos media/ ya que será montado como volumen
 
 EXPOSE 8000
 
-CMD ["python", "uvicorn", "app.main:app", "runserver", "0.0.0.0:8000", "--host"]
+CMD ["uvicorn", "api.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
