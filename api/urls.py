@@ -74,8 +74,10 @@ class CSRFView(View):
 urlpatterns = [
     # Admin interface
     re_path(r"^admin/?", admin.site.urls),
+    # Health check endpoint
+    re_path(r"^api/", include("api.apps.monitoring.urls")),
     # API router URLs
-    re_path(r"^api/?", include(router.urls)),
+    re_path(r"^api/", include(router.urls)),
     # Authentication endpoints
     re_path(r"^api/register/?", RegisterView.as_view(), name="register"),
     re_path(r"^api/login/?", LoginView.as_view(), name="login"),
@@ -94,8 +96,6 @@ urlpatterns = [
         GetQuestions.as_view(),
         name="get-questions",
     ),
-    # Health check endpoint
-    re_path(r"^", include("api.apps.monitoring.urls")),
 ]
 
 # Static/Media files serving in development

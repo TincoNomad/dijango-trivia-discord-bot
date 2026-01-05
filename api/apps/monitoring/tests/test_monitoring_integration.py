@@ -14,7 +14,7 @@ This module verifies:
 import pytest
 
 from api.apps.monitoring.models import ErrorLog, RequestLog
-from api.django import TRIVIA_URL
+from api.settings import TRIVIA_URL
 
 from .test_base import MonitoringBaseTest
 

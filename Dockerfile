@@ -19,8 +19,7 @@ RUN pip install -r requirements.txt
 # Luego copiamos solo los archivos necesarios
 COPY manage.py .
 COPY api/ ./api
-COPY templates/ ./templates
-COPY static/ ./static
+# Los archivos estáticos ya están en api/static
 # No copiamos media/ ya que será montado como volumen
 
 EXPOSE 8000

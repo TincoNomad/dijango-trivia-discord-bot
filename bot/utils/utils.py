@@ -8,24 +8,17 @@ Provides helper functions for:
 """
 
 import logging
-from typing import Any, Dict, Tuple
-
-from api.django import DIFFICULTY_URL, THEME_URL
-
 from ..api_client import TriviaAPIClient
+from typing import Tuple, Dict, Any
 
 # Constants for game configuration
 TIMEOUT_DURATION = 30  # Seconds to wait for user input
-MAX_QUESTIONS = 5  # Maximum questions per game
+MAX_QUESTIONS = 5     # Maximum questions per game
 POINTS_PER_CORRECT_ANSWER = 10  # Points awarded per correct answer
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 
 async def get_theme_list() -> Tuple[str, Dict[int, Dict[str, Any]]]:
     """
@@ -41,22 +34,20 @@ async def get_theme_list() -> Tuple[str, Dict[int, Dict[str, Any]]]:
     """
     try:
         async with TriviaAPIClient() as client:
-            themes = await client.get(THEME_URL)
-
-            theme_dict = {
-                i + 1: {"id": theme["id"], "name": theme["name"]}
-                for i, theme in enumerate(themes)
-            }
-
+            themes = await client.get_themes()
+            
+            theme_dict = {i+1: {'id': theme['id'], 'name': theme['name']} 
+                         for i, theme in enumerate(themes)}
+            
             theme_list = "\n".join(
-                f"{num}- {theme['name']}" for num, theme in theme_dict.items()
+                f"{num}- {theme['name']}" 
+                for num, theme in theme_dict.items()
             )
-
+            
             return theme_list, theme_dict
     except Exception as e:
         logger.error(f"Error getting theme list: {e}")
         raise
-
 
 async def get_difficulty_list() -> Tuple[str, Dict[int, str]]:
     """
@@ -72,12 +63,13 @@ async def get_difficulty_list() -> Tuple[str, Dict[int, str]]:
     """
     try:
         async with TriviaAPIClient() as client:
-            difficulties = await client.get(DIFFICULTY_URL)
-
+            difficulties = await client.get_difficulties()
+            
             difficulty_list = "\n".join(
-                f"{level}- {name}" for level, name in difficulties.items()
+                f"{level}- {name}" 
+                for level, name in difficulties.items()
             )
-
+            
             return difficulty_list, difficulties
     except Exception as e:
         logger.error(f"Error getting difficulty list: {e}")

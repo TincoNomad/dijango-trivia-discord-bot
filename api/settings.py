@@ -41,53 +41,54 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 from typing import List
-import environ
-
-# Initialize environ
-env = environ.Env()
 
 # Project setup
 project_root = Path(__file__).resolve().parent.parent
 sys.path.append(str(project_root))
 
-# Read .env file
-environ.Env.read_env(os.path.join(project_root, ".env"))
-
 # Base directory configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security settings
-SECRET_KEY = env("SECRET_KEY")
-DEBUG = env.bool("DEBUG", default=False)
-ENVIRONMENT = env("ENVIRONMENT", default="production")
+SECRET_KEY = os.getenv("SECRET_KEY")
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
 ALLOWED_HOSTS: List[str] = []
 
-# Allowed hosts configuration based on environment
-ALLOWED_HOSTS = env("ALLOWED_HOSTS", default="").split(",")
-if DEBUG:
-    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1", "web"])
+# Allowed hosts configuration
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS.extend(["localhost", "127.0.0.1", "web", "0.0.0.0"])
+ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]  # Remove empty strings
 
 # HTTPS Security Configuration
-# These settings will be automatically adjusted based on the environment
-# In development (DEBUG=True): These will be overridden to be more permissive
-# In production (DEBUG=False): These strict security settings will be used
-SECURE_SSL_REDIRECT = not DEBUG  # c Only force HTTPS in production
-SECURE_PROXY_SSL_HEADER = (
-    "HTTP_X_FORWARDED_PROTO",
-    "https" if not DEBUG else "http",
-)
-SESSION_COOKIE_SECUREl = not DEBUG  # Only require HTTPS cookies in production
-CSRF_COOKIE_SECURE = not DEBUG  # Only require HTTPS CSRF in production
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_REDIRECT_EXEMPT = [r"health"]  # Broad exemption for health check path
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https" if not DEBUG else "http")
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # HSTS only in production
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG  # Include subdomains only in production
 SECURE_HSTS_PRELOAD = not DEBUG  # Preload only in production
 
 # Base URL Configuration
 # This will be overridden in environment-specific settings
-BASE_URL = env(
+BASE_URL = os.getenv(
     "API_BASE_URL",
-    default="https://your-production-domain.com" if not DEBUG else "http://web:8000",
+    "https://your-production-domain.com" if not DEBUG else "http://web:8000",
 )
+
+# API Endpoint Constants
+TRIVIA_URL = f"{BASE_URL}/api/trivias/"
+THEME_URL = f"{BASE_URL}/api/themes/"
+SCORES_URL = f"{BASE_URL}/api/score/"
+LEADERBOARD_URL = f"{BASE_URL}/api/leaderboards/"
+QUESTIONS_URL = f"{BASE_URL}/api/questions/"      # Base for /api/questions/{id}/
+HEALTH_URL = f"{BASE_URL}/api/health/"
+
+# Custom Bot-specific Endpoints
+FILTER_URL = f"{TRIVIA_URL}filter/"
+DIFFICULTY_URL = f"{TRIVIA_URL}difficulty/"
+
 
 # Application configuration
 INSTALLED_APPS = [
@@ -130,14 +131,14 @@ MIDDLEWARE = [
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB"),
-        "USER": env("POSTGRES_USER"),
-        "PASSWORD": env("POSTGRES_PASSWORD"),
-        "HOST": env("POSTGRES_HOST"),
-        "PORT": env("POSTGRES_PORT"),
+        "NAME": os.getenv("PGDATABASE"),
+        "USER": os.getenv("PGUSER"),
+        "PASSWORD": os.getenv("PGPASSWORD"),
+        "HOST": os.getenv("PGHOST"),
+        "PORT": os.getenv("PGPORT", "5432"),
         "OPTIONS": {
-            "sslmode": "require",  # Required for Neon.tech
-        } if not DEBUG else {}
+            "sslmode": os.getenv("PGSSLMODE", "require"),
+        }
     }
 }
 
@@ -145,7 +146,7 @@ DATABASES = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": env("REDIS_URL", default="redis://redis:6379/1"),
+        "LOCATION": os.getenv("REDIS_URL", "redis://redis:6379/1"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "PARSER_CLASS": "redis.connection.DefaultParser",
@@ -158,10 +159,10 @@ CACHES = {
 }
 
 # Cache time to live is 15 minutes by default
-CACHE_TTL = env("CACHE_TTL", default=60 * 15)
+CACHE_TTL = int(os.getenv("CACHE_TTL", 60 * 15))
 
 # Cache key prefix to avoid collisions
-CACHE_KEY_PREFIX = env("CACHE_KEY_PREFIX", default="trivia_api")
+CACHE_KEY_PREFIX = os.getenv("CACHE_KEY_PREFIX", "trivia_api")
 
 # JWT Authentication settings
 SIMPLE_JWT = {
@@ -170,7 +171,7 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": env("SIGNING_KEY"),
+    "SIGNING_KEY": os.getenv("SIGNING_KEY"),
     "VERIFYING_KEY": None,
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "id",
@@ -239,7 +240,7 @@ LOCALE_PATHS = [
 
 # Static files configuration
 STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR.parent, "staticfiles")
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # WhiteNoise Configuration
 WHITENOISE_USE_FINDERS = True
@@ -247,7 +248,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Additional directory for static files
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, "api", "static"),
 ]
 
 # Default primary key field type
@@ -292,28 +293,25 @@ if DEBUG:
 # CSRF Configuration
 CSRF_COOKIE_NAME = "csrftoken"
 CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
-CSRF_COOKIE_SECURE = False  # Should be True in production
 CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_SAMESITE = "Lax"
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    "https://your-discord-bot-domain.com",
-]
+CORS_ALLOWED_ORIGINS = os.getenv(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000",
+).split(",")
 CORS_ALLOW_METHODS = [
     "GET",
     "POST",
     "PATCH",
 ]
 
-# Security Headers
+# Security Headers (Already defined at top where appropriate)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
-
-# Add security headers middleware
-MIDDLEWARE.append("django.middleware.security.SecurityMiddleware")
 
 # CSP (Content Security Policy)
 CSP_DEFAULT_SRC = ("'none'",)
@@ -322,32 +320,31 @@ CSP_CONNECT_SRC = ("'self'",)
 CSP_STYLE_SRC = ("'self'",)
 CSP_IMG_SRC = ("'self'",)
 
-# Session security
-SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_HTTPONLY = True
+# Session security consolidated
 SESSION_COOKIE_SAMESITE = "Strict"
+SESSION_COOKIE_HTTPONLY = True
 
 # Migrations Configuration
 MIGRATIONS_CONFIG = {
     "logging": {
-        "enabled": env("MIGRATIONS_LOGGING_ENABLED", default=True),
-        "level": env("MIGRATIONS_LOGGING_LEVEL", default="INFO"),
+        "enabled": os.getenv("MIGRATIONS_LOGGING_ENABLED", "True").lower() == "true",
+        "level": os.getenv("MIGRATIONS_LOGGING_LEVEL", "INFO"),
     },
     "validation": {
-        "check_db_connection": env("MIGRATIONS_VALIDATION_CHECK_DB", default=True),
-        "check_dependencies": env("MIGRATIONS_VALIDATION_CHECK_DEPS", default=True),
+        "check_db_connection": os.getenv("MIGRATIONS_VALIDATION_CHECK_DB", "True").lower() == "true",
+        "check_dependencies": os.getenv("MIGRATIONS_VALIDATION_CHECK_DEPS", "True").lower() == "true",
     },
     "performance": {
-        "batch_size": env("MIGRATIONS_PERFORMANCE_BATCH_SIZE", default=1000),
-        "use_transactions": env(
-            "MIGRATIONS_PERFORMANCE_USE_TRANSACTIONS", default=True
-        ),
+        "batch_size": int(os.getenv("MIGRATIONS_PERFORMANCE_BATCH_SIZE", 1000)),
+        "use_transactions": os.getenv(
+            "MIGRATIONS_PERFORMANCE_USE_TRANSACTIONS", "True"
+        ).lower() == "true",
     },
 }
 
 # Celery Configuration (Inactive but ready)
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"

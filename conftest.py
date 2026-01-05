@@ -30,7 +30,7 @@ from api.apps.users.models import CustomUser
 def pytest_configure(config):
     """Configure test environment"""
     os.environ.setdefault("DJANGO_ENVIRONMENT", "development")
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "api.django.dev")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "api.settings")
     django.setup()
 
 

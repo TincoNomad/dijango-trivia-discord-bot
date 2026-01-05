@@ -8,14 +8,12 @@ This cog provides command handlers for all trivia-related functionality includin
 """
 
 from discord.ext import commands
-
 from .trivia_commands import TriviaCommands
-
 
 class TriviaCog(commands.Cog):
     """
     Cog that handles all trivia-related commands and events.
-
+    
     Attributes:
         bot (commands.Bot): The Discord bot instance
         trivia_commands (TriviaCommands): Handler for trivia command logic
@@ -66,14 +64,12 @@ class TriviaCog(commands.Cog):
     async def on_command_error(self, ctx: commands.Context, error: Exception):
         """Handle command errors"""
         if isinstance(error, commands.CommandNotFound):
-            await ctx.send(
-                "❌ Command not found. Available commands:\n"
-                + "`$trivia` - Start a game\n"
-                + "`$list_trivia` - Show available trivias\n"
-                + "`$score` - Show current score\n"
-                + "`$stop_game` - Stop current game\n"
-                + "`$create_trivia` - Create new trivia\n"
-                + "`$update_trivia` - Update existing trivia"
-            )
+            await ctx.send("❌ Command not found. Available commands:\n" +
+                         "`$trivia` - Start a game\n" +
+                         "`$list_trivia` - Show available trivias\n" +
+                         "`$score` - Show current score\n" +
+                         "`$stop_game` - Stop current game\n" +
+                         "`$create_trivia` - Create new trivia\n" +
+                         "`$update_trivia` - Update existing trivia")
         else:
             await ctx.send("❌ An error occurred while processing your command.")
